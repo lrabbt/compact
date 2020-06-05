@@ -23,7 +23,7 @@ setup(
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
-        'Operating System :: Posix :: Linux',
+        'Operating System :: POSIX :: Linux',
     ],
     packages=find_packages(),
     install_requires=[
