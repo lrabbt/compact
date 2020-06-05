@@ -12,4 +12,7 @@ setup(
     name='Compact',
     version=version,
     packages=find_packages(),
+    install_requires=[
+        'SQLAlchemy==1.3.17'
+    ]
 )
