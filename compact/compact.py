@@ -111,7 +111,7 @@ class Compact:
                 'UNIDADE',
                 'DATA_FIM',
                 'VALOR']
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=';')
             writer.writeheader()
             for opening in opening_entries:
                 for closing in closing_entries:

@@ -352,7 +352,7 @@ def test_compact_csv_generation(base_compact, input_files, output_file_path):
     for opening, closing in zip(opening_entries, closing_entries):
         output_row = None
         with open(output_file_path, 'r', newline='') as f:
-            output_reader = csv.DictReader(f)
+            output_reader = csv.DictReader(f, delimiter=';')
             for row in output_reader:
                 if int(opening['id']) == int(row['ID']):
                     output_row = row
