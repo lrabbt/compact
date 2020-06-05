@@ -5,7 +5,8 @@ import datetime
 import csv
 
 from .db import Opening, Closing, FileParsing
-from .db import OK, FILE_NOT_FOUND, OPENING, CLOSING
+from .db import OK, FILE_NOT_FOUND, BROKEN_FILE
+from .db import OPENING, CLOSING
 
 
 class CompactConfiguration:
@@ -52,6 +53,8 @@ class Compact:
                         session.add(opening)
             except FileNotFoundError:
                 opening_action.status = FILE_NOT_FOUND
+            except KeyError:
+                opening_action.status = BROKEN_FILE
 
             session.add(opening_action)
 
@@ -79,6 +82,8 @@ class Compact:
                         session.add(closing)
             except FileNotFoundError:
                 closing_action.status = FILE_NOT_FOUND
+            except KeyError:
+                closing_action.status = BROKEN_FILE
 
             session.add(closing_action)
 

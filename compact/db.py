@@ -8,6 +8,7 @@ from pathlib import Path
 
 OK = 'OK'
 FILE_NOT_FOUND = 'Arquivo inexistente'
+BROKEN_FILE = 'Arquivo corrompido'
 
 OPENING = 'OPENING'
 CLOSING = 'CLOSING'
