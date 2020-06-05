@@ -1,6 +1,6 @@
 from compact.compact import Compact, CompactConfiguration
 from compact.db import Base, Opening, Closing, FileParsing
-from compact.db import OPENING, CLOSING, OK
+from compact.db import OPENING, CLOSING, OK, FILE_NOT_FOUND
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 
@@ -30,8 +30,8 @@ def db_session(engine):
 
 
 @pytest.fixture
-def input_files(tmp_path):
-    opening_entries = [
+def sample_data_opening():
+    return [
         dict(id=1, initial_date='12/12/2019',
              name='Jose Luiz Bordonal Junior', note=' CADQOS-PRD', unit=11),
         dict(id=2, initial_date='13/12/2019',
@@ -182,7 +182,11 @@ def input_files(tmp_path):
              name='Andressa Ferrazza Gentil',
              note=' RJO_PRD_DWH_CAC', unit=330)
     ]
-    closing_entries = [
+
+
+@pytest.fixture
+def sample_data_closing():
+    return [
         dict(id=1, final_date='12/12/2020 10:01', value='11,00'),
         dict(id=2, final_date='13/12/2020 11:01', value='387,00'),
         dict(id=3, final_date='14/12/2020 15:01', value='420,00'),
@@ -234,26 +238,50 @@ def input_files(tmp_path):
         dict(id=49, final_date='29/01/2021 10:01', value='4,00'),
         dict(id=50, final_date='30/01/2021 10:01', value='330,00')
     ]
-    opening_file_content = 'ID;DATA_INICIO;NOME;NOTA;UNIDADE'
-    for entry in opening_entries:
-        opening_file_content += f"\n{entry['id']};{entry['initial_date']};" \
-                                + f"{entry['name']};{entry['note']};" \
-                                + f"{entry['unit']}"
-    closing_file_content = 'ID;DATA_FIM;VALOR'
-    for entry in closing_entries:
-        closing_file_content += f"\n{entry['id']};{entry['final_date']};" \
-                                + f"{entry['value']}"
 
+
+@pytest.fixture
+def input_file_opening(tmp_path, sample_data_opening):
     opening_path = tmp_path / 'opening.csv'
     with open(opening_path, 'w') as f:
-        f.write(opening_file_content)
+        fieldnames = ['ID', 'DATA_INICIO', 'NOME', 'NOTA', 'UNIDADE']
+        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=';')
 
+        writer.writeheader()
+        for entry in sample_data_opening:
+            row = dict(ID=entry['id'],
+                       DATA_INICIO=entry['initial_date'],
+                       NOME=entry['name'],
+                       NOTA=entry['note'],
+                       UNIDADE=entry['unit'])
+            writer.writerow(row)
+
+    return dict(path=opening_path,
+                entries=sample_data_opening)
+
+
+@pytest.fixture
+def input_file_closing(tmp_path, sample_data_closing):
     closing_path = tmp_path / 'closing.csv'
     with open(closing_path, 'w') as f:
-        f.write(closing_file_content)
+        fieldnames = ['ID', 'DATA_FIM', 'VALOR']
+        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter=';')
 
-    return dict(opening=dict(path=opening_path, entries=opening_entries),
-                closing=dict(path=closing_path, entries=closing_entries))
+        writer.writeheader()
+        for entry in sample_data_closing:
+            row = dict(ID=entry['id'],
+                       DATA_FIM=entry['final_date'],
+                       VALOR=entry['value'])
+            writer.writerow(row)
+
+    return dict(path=closing_path,
+                entries=sample_data_closing)
+
+
+@pytest.fixture
+def input_files(tmp_path, input_file_opening, input_file_closing):
+    return dict(opening=input_file_opening,
+                closing=input_file_closing)
 
 
 @pytest.fixture
@@ -262,13 +290,17 @@ def output_file_path(tmp_path):
 
 
 @pytest.fixture
-def base_compact(input_files, engine, output_file_path):
-    configuration = CompactConfiguration(
+def base_compact_configuration(input_files, engine, output_file_path):
+    return CompactConfiguration(
         opening_file_path=input_files['opening']['path'],
         closing_file_path=input_files['closing']['path'],
         datasource_engine=engine,
         output_file_path=output_file_path)
-    return Compact(configuration)
+
+
+@pytest.fixture
+def base_compact(base_compact_configuration):
+    return Compact(base_compact_configuration)
 
 
 def test_compact_database_save(base_compact, input_files, db_session):
@@ -349,4 +381,74 @@ def test_compact_table_log(base_compact, input_files, db_session):
     assert closing_action.file_path == input_files['closing']['path'], \
         'Wrong closing file path on database'
     assert closing_action.status == OK, \
+        'Wrong status saved on database'
+
+
+def test_compact_opening_file_does_not_exist(tmp_path,
+                                             base_compact_configuration,
+                                             db_session, input_files):
+    # given
+    no_file_path = tmp_path / 'no-file.csv'
+    base_compact_configuration.opening_file_path = no_file_path
+    compact = Compact(base_compact_configuration)
+
+    # when
+    compact.compact()
+
+    # then
+    opening_action = db_session.query(FileParsing)\
+        .filter_by(file_type=OPENING)\
+        .one_or_none()
+    assert opening_action is not None, 'Opening action not saved on database'
+    assert opening_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert opening_action.file_path == no_file_path, \
+        'Wrong opening file path on database'
+    assert opening_action.status == FILE_NOT_FOUND, \
+        'Wrong status saved on database'
+
+    closing_action = db_session.query(FileParsing)\
+        .filter_by(file_type=CLOSING)\
+        .one_or_none()
+    assert closing_action is not None, 'Closing action not saved on database'
+    assert closing_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert closing_action.file_path == input_files['closing']['path'], \
+        'Wrong closing file path on database'
+    assert closing_action.status == OK, \
+        'Wrong status saved on database'
+
+
+def test_compact_closing_file_does_not_exist(tmp_path,
+                                             base_compact_configuration,
+                                             db_session, input_files):
+    # given
+    no_file_path = tmp_path / 'no-file.csv'
+    base_compact_configuration.closing_file_path = no_file_path
+    compact = Compact(base_compact_configuration)
+
+    # when
+    compact.compact()
+
+    # then
+    opening_action = db_session.query(FileParsing)\
+        .filter_by(file_type=OPENING)\
+        .one_or_none()
+    assert opening_action is not None, 'Opening action not saved on database'
+    assert opening_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert opening_action.file_path == input_files['opening']['path'], \
+        'Wrong opening file path on database'
+    assert opening_action.status == OK, \
+        'Wrong status saved on database'
+
+    closing_action = db_session.query(FileParsing)\
+        .filter_by(file_type=CLOSING)\
+        .one_or_none()
+    assert closing_action is not None, 'Closing action not saved on database'
+    assert closing_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert closing_action.file_path == no_file_path, \
+        'Wrong closing file path on database'
+    assert closing_action.status == FILE_NOT_FOUND, \
         'Wrong status saved on database'

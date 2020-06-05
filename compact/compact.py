@@ -4,7 +4,8 @@ from contextlib import contextmanager
 import datetime
 import csv
 
-from .db import Opening, Closing, FileParsing, OK, OPENING, CLOSING
+from .db import Opening, Closing, FileParsing
+from .db import OK, FILE_NOT_FOUND, OPENING, CLOSING
 
 
 class CompactConfiguration:
@@ -28,49 +29,57 @@ class Compact:
         opening_entries = []
         closing_entries = []
         with self.db_session() as session:
-            with open(self.configuration.opening_file_path,
-                      'r', newline='') as opening_file:
-                opening_reader = csv.DictReader(opening_file, delimiter=';')
-                for row in opening_reader:
-                    day, month, year = map(
-                        int, row['DATA_INICIO'].strip().split('/'))
-                    initial_date = datetime.datetime(year, month, day)
-                    opening = Opening(id=row['ID'],
-                                      initial_date=initial_date,
-                                      name=row['NOME'],
-                                      note=row['NOTA'],
-                                      unit=row['UNIDADE'])
-
-                    opening_entries.append(row)
-                    session.add(opening)
-
             opening_action = FileParsing()
             opening_action.file_type = OPENING
             opening_action.file_path = self.configuration.opening_file_path
             opening_action.status = OK
+            try:
+                with open(self.configuration.opening_file_path,
+                          'r', newline='') as opening_file:
+                    opening_reader = csv.DictReader(opening_file,
+                                                    delimiter=';')
+                    for row in opening_reader:
+                        day, month, year = map(
+                            int, row['DATA_INICIO'].strip().split('/'))
+                        initial_date = datetime.datetime(year, month, day)
+                        opening = Opening(id=row['ID'],
+                                          initial_date=initial_date,
+                                          name=row['NOME'],
+                                          note=row['NOTA'],
+                                          unit=row['UNIDADE'])
+
+                        opening_entries.append(row)
+                        session.add(opening)
+            except FileNotFoundError:
+                opening_action.status = FILE_NOT_FOUND
+
             session.add(opening_action)
-
-            with open(self.configuration.closing_file_path,
-                      'r', newline='') as closing_file:
-                closing_reader = csv.DictReader(closing_file, delimiter=';')
-                for row in closing_reader:
-                    date, time = row['DATA_FIM'].strip().split()
-                    day, month, year = map(int, date.split('/'))
-                    hour, minute = map(int, time.split(':'))
-                    final_date = datetime.datetime(
-                        year, month, day, hour, minute)
-                    value = float(row['VALOR'].replace(',', '.'))
-                    closing = Closing(id=row['ID'],
-                                      final_date=final_date,
-                                      value=value)
-
-                    closing_entries.append(row)
-                    session.add(closing)
 
             closing_action = FileParsing()
             closing_action.file_type = CLOSING
             closing_action.file_path = self.configuration.closing_file_path
             closing_action.status = OK
+            try:
+                with open(self.configuration.closing_file_path,
+                          'r', newline='') as closing_file:
+                    closing_reader = csv.DictReader(closing_file,
+                                                    delimiter=';')
+                    for row in closing_reader:
+                        date, time = row['DATA_FIM'].strip().split()
+                        day, month, year = map(int, date.split('/'))
+                        hour, minute = map(int, time.split(':'))
+                        final_date = datetime.datetime(
+                            year, month, day, hour, minute)
+                        value = float(row['VALOR'].replace(',', '.'))
+                        closing = Closing(id=row['ID'],
+                                          final_date=final_date,
+                                          value=value)
+
+                        closing_entries.append(row)
+                        session.add(closing)
+            except FileNotFoundError:
+                closing_action.status = FILE_NOT_FOUND
+
             session.add(closing_action)
 
         with open(self.configuration.output_file_path, 'w') as f:
