@@ -295,12 +295,20 @@ def output_file_path(tmp_path):
 
 
 @pytest.fixture
-def base_compact_configuration(input_files, engine, output_file_path):
+def actions_file_path(tmp_path):
+    return tmp_path / 'out.log'
+
+
+@pytest.fixture
+def base_compact_configuration(input_files, engine,
+                               output_file_path,
+                               actions_file_path):
     return CompactConfiguration(
         opening_file_path=input_files['opening']['path'],
         closing_file_path=input_files['closing']['path'],
         datasource_engine=engine,
-        output_file_path=output_file_path)
+        output_file_path=output_file_path,
+        actions_file_path=actions_file_path)
 
 
 @pytest.fixture
@@ -387,6 +395,18 @@ def test_compact_table_log(base_compact, input_files, db_session):
         'Wrong closing file path on database'
     assert closing_action.status == OK, \
         'Wrong status saved on database'
+
+
+def test_compact_file_log(base_compact, input_files, actions_file_path):
+    # when
+    base_compact.compact()
+
+    # then
+    assert actions_file_path.exists(), 'Log file not created'
+    assert actions_file_path.is_file(), 'Log file is not a file'
+    with actions_file_path.open() as f:
+        lines = [line for line in f]
+        assert len(lines) == 2, 'Log file badly saved'
 
 
 def test_compact_opening_file_does_not_exist(tmp_path,

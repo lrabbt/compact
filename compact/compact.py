@@ -15,11 +15,13 @@ class CompactConfiguration:
             opening_file_path=None,
             closing_file_path=None,
             datasource_engine=None,
-            output_file_path=None):
+            output_file_path=None,
+            actions_file_path=None):
         self.opening_file_path = opening_file_path
         self.closing_file_path = closing_file_path
         self.datasource_engine = datasource_engine
         self.output_file_path = output_file_path
+        self.actions_file_path = actions_file_path
 
 
 class Compact:
@@ -59,6 +61,11 @@ class Compact:
                 opening_action.status = BROKEN_FILE
 
             session.add(opening_action)
+            with self.configuration.actions_file_path.open('a') as f:
+                f.write(f'{datetime.datetime.now().isoformat()} '
+                        f'{opening_action.file_type} '
+                        f'{opening_action.file_path} '
+                        f'{opening_action.status}\n')
 
             closing_action = FileParsing()
             closing_action.file_type = CLOSING
@@ -89,6 +96,11 @@ class Compact:
                 closing_action.status = BROKEN_FILE
 
             session.add(closing_action)
+            with self.configuration.actions_file_path.open('a') as f:
+                f.write(f'{datetime.datetime.now().isoformat()} '
+                        f'{closing_action.file_type} '
+                        f'{closing_action.file_path} '
+                        f'{closing_action.status}\n')
 
         with open(self.configuration.output_file_path, 'w') as f:
             fieldnames = [
