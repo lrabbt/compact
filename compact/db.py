@@ -1,6 +1,15 @@
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.sql import func
 from sqlalchemy import Column, Integer, String, DateTime, Text, Float
 
+from pathlib import Path
+
+
+OK = 'OK'
+
+OPENING = 'OPENING'
+CLOSING = 'CLOSING'
 
 Base = declarative_base()
 
@@ -8,6 +17,7 @@ Base = declarative_base()
 class BaseSchema(Base):
     __abstract__ = True
     id = Column(Integer, primary_key=True)
+    creation_date = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class Opening(BaseSchema):
@@ -37,3 +47,19 @@ class Closing(BaseSchema):
 
     final_date = Column('data_fim', DateTime)
     value = Column('valor', Float)
+
+
+class FileParsing(BaseSchema):
+    __tablename__ = 'TB_LOG'
+
+    file_type = Column('tipo_arquivo', String(255))
+    _file_path = Column('caminho_arquivo', String(255))
+    status = Column('status', String(255))
+
+    @hybrid_property
+    def file_path(self):
+        return Path(self._file_path)
+
+    @file_path.setter
+    def file_path(self, file_path):
+        self._file_path = str(file_path)

@@ -4,7 +4,7 @@ from contextlib import contextmanager
 import datetime
 import csv
 
-from .db import Opening, Closing
+from .db import Opening, Closing, FileParsing, OK, OPENING, CLOSING
 
 
 class CompactConfiguration:
@@ -44,6 +44,12 @@ class Compact:
                     opening_entries.append(row)
                     session.add(opening)
 
+            opening_action = FileParsing()
+            opening_action.file_type = OPENING
+            opening_action.file_path = self.configuration.opening_file_path
+            opening_action.status = OK
+            session.add(opening_action)
+
             with open(self.configuration.closing_file_path,
                       'r', newline='') as closing_file:
                 closing_reader = csv.DictReader(closing_file, delimiter=';')
@@ -60,6 +66,12 @@ class Compact:
 
                     closing_entries.append(row)
                     session.add(closing)
+
+            closing_action = FileParsing()
+            closing_action.file_type = CLOSING
+            closing_action.file_path = self.configuration.closing_file_path
+            closing_action.status = OK
+            session.add(closing_action)
 
         with open(self.configuration.output_file_path, 'w') as f:
             fieldnames = [

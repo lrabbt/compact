@@ -1,5 +1,6 @@
 from compact.compact import Compact, CompactConfiguration
-from compact.db import Base, Opening, Closing
+from compact.db import Base, Opening, Closing, FileParsing
+from compact.db import OPENING, CLOSING, OK
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 
@@ -321,3 +322,31 @@ def test_compact_csv_generation(base_compact, input_files, output_file_path):
         assert output_row['DATA_FIM'] == closing['final_date'], \
             'Final date wrong on csv'
         assert output_row['VALOR'] == closing['value'], 'Value wrong on csv'
+
+
+def test_compact_table_log(base_compact, input_files, db_session):
+    # when
+    base_compact.compact()
+
+    # then
+    opening_action = db_session.query(FileParsing)\
+        .filter_by(file_type=OPENING)\
+        .one_or_none()
+    assert opening_action is not None, 'Opening action not saved on database'
+    assert opening_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert opening_action.file_path == input_files['opening']['path'], \
+        'Wrong opening file path on database'
+    assert opening_action.status == OK, \
+        'Wrong status saved on database'
+
+    closing_action = db_session.query(FileParsing)\
+        .filter_by(file_type=CLOSING)\
+        .one_or_none()
+    assert closing_action is not None, 'Closing action not saved on database'
+    assert closing_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert closing_action.file_path == input_files['closing']['path'], \
+        'Wrong closing file path on database'
+    assert closing_action.status == OK, \
+        'Wrong status saved on database'
