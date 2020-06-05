@@ -13,6 +13,13 @@ setup(
     version=version,
     packages=find_packages(),
     install_requires=[
-        'SQLAlchemy==1.3.17'
-    ]
+        'SQLAlchemy==1.3.17',
+        'click==7.1.2'
+    ],
+    entry_points={
+        'console_scripts': [
+            'compact = compact.cli:main',
+            'compact-utils = compact.cli:utils'
+        ]
+    }
 )
