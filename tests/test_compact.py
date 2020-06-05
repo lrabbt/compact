@@ -565,3 +565,327 @@ def test_compact_closing_file_missing_key(tmp_path, sample_data_closing,
         'Wrong closing file path on database'
     assert closing_action.status == BROKEN_FILE, \
         'Wrong status saved on database'
+
+
+def test_compact_opening_invalid_id(tmp_path, sample_data_opening,
+                                    base_compact_configuration,
+                                    db_session, input_files):
+    # given
+    opening_file_path = tmp_path / 'no-id.csv'
+    with open(opening_file_path, 'w') as f:
+        fieldnames = sample_data_opening['fieldnames']
+        entries = sample_data_opening['entries']
+        entries[2]['id'] = ''
+        writer = csv.DictWriter(f,
+                                fieldnames=fieldnames,
+                                delimiter=';')
+
+        writer.writeheader()
+        for entry in entries:
+            row = dict(ID=entry['id'],
+                       DATA_INICIO=entry['initial_date'],
+                       NOME=entry['name'],
+                       NOTA=entry['note'],
+                       UNIDADE=entry['unit'])
+            writer.writerow(row)
+
+    base_compact_configuration.opening_file_path = opening_file_path
+    compact = Compact(base_compact_configuration)
+
+    # when
+    try:
+        compact.compact()
+    except Exception as e:
+        assert e is None, 'No exceptions should be thrown'
+
+    # then
+    opening_action = db_session.query(FileParsing)\
+        .filter_by(file_type=OPENING)\
+        .one_or_none()
+    assert opening_action is not None, 'Opening action not saved on database'
+    assert opening_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert opening_action.file_path == opening_file_path, \
+        'Wrong opening file path on database'
+    assert opening_action.status == BROKEN_FILE, \
+        'Wrong status saved on database'
+
+    closing_action = db_session.query(FileParsing)\
+        .filter_by(file_type=CLOSING)\
+        .one_or_none()
+    assert closing_action is not None, 'Closing action not saved on database'
+    assert closing_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert closing_action.file_path == input_files['closing']['path'], \
+        'Wrong closing file path on database'
+    assert closing_action.status == OK, \
+        'Wrong status saved on database'
+
+
+def test_compact_opening_invalid_initial_date(tmp_path, sample_data_opening,
+                                              base_compact_configuration,
+                                              db_session, input_files):
+    # given
+    opening_file_path = tmp_path / 'no-id.csv'
+    with open(opening_file_path, 'w') as f:
+        fieldnames = sample_data_opening['fieldnames']
+        entries = sample_data_opening['entries']
+        entries[3]['initial_date'] = ''
+        writer = csv.DictWriter(f,
+                                fieldnames=fieldnames,
+                                delimiter=';')
+
+        writer.writeheader()
+        for entry in entries:
+            row = dict(ID=entry['id'],
+                       DATA_INICIO=entry['initial_date'],
+                       NOME=entry['name'],
+                       NOTA=entry['note'],
+                       UNIDADE=entry['unit'])
+            writer.writerow(row)
+
+    base_compact_configuration.opening_file_path = opening_file_path
+    compact = Compact(base_compact_configuration)
+
+    # when
+    try:
+        compact.compact()
+    except Exception as e:
+        assert e is None, 'No exceptions should be thrown'
+
+    # then
+    opening_action = db_session.query(FileParsing)\
+        .filter_by(file_type=OPENING)\
+        .one_or_none()
+    assert opening_action is not None, 'Opening action not saved on database'
+    assert opening_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert opening_action.file_path == opening_file_path, \
+        'Wrong opening file path on database'
+    assert opening_action.status == BROKEN_FILE, \
+        'Wrong status saved on database'
+
+    closing_action = db_session.query(FileParsing)\
+        .filter_by(file_type=CLOSING)\
+        .one_or_none()
+    assert closing_action is not None, 'Closing action not saved on database'
+    assert closing_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert closing_action.file_path == input_files['closing']['path'], \
+        'Wrong closing file path on database'
+    assert closing_action.status == OK, \
+        'Wrong status saved on database'
+
+
+def test_compact_opening_invalid_unit(tmp_path, sample_data_opening,
+                                      base_compact_configuration,
+                                      db_session, input_files):
+    # given
+    opening_file_path = tmp_path / 'no-id.csv'
+    with open(opening_file_path, 'w') as f:
+        fieldnames = sample_data_opening['fieldnames']
+        entries = sample_data_opening['entries']
+        entries[3]['unit'] = ''
+        writer = csv.DictWriter(f,
+                                fieldnames=fieldnames,
+                                delimiter=';')
+
+        writer.writeheader()
+        for entry in entries:
+            row = dict(ID=entry['id'],
+                       DATA_INICIO=entry['initial_date'],
+                       NOME=entry['name'],
+                       NOTA=entry['note'],
+                       UNIDADE=entry['unit'])
+            writer.writerow(row)
+
+    base_compact_configuration.opening_file_path = opening_file_path
+    compact = Compact(base_compact_configuration)
+
+    # when
+    try:
+        compact.compact()
+    except Exception as e:
+        assert e is None, 'No exceptions should be thrown'
+
+    # then
+    opening_action = db_session.query(FileParsing)\
+        .filter_by(file_type=OPENING)\
+        .one_or_none()
+    assert opening_action is not None, 'Opening action not saved on database'
+    assert opening_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert opening_action.file_path == opening_file_path, \
+        'Wrong opening file path on database'
+    assert opening_action.status == BROKEN_FILE, \
+        'Wrong status saved on database'
+
+    closing_action = db_session.query(FileParsing)\
+        .filter_by(file_type=CLOSING)\
+        .one_or_none()
+    assert closing_action is not None, 'Closing action not saved on database'
+    assert closing_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert closing_action.file_path == input_files['closing']['path'], \
+        'Wrong closing file path on database'
+    assert closing_action.status == OK, \
+        'Wrong status saved on database'
+
+
+def test_compact_closing_invalid_id(tmp_path, sample_data_closing,
+                                    base_compact_configuration,
+                                    db_session, input_files):
+    # given
+    closing_file_path = tmp_path / 'no-id.csv'
+    with open(closing_file_path, 'w') as f:
+        fieldnames = sample_data_closing['fieldnames']
+        entries = sample_data_closing['entries']
+        entries[2]['id'] = ''
+        writer = csv.DictWriter(f,
+                                fieldnames=fieldnames,
+                                delimiter=';')
+
+        writer.writeheader()
+        for entry in entries:
+            row = dict(ID=entry['id'],
+                       DATA_FIM=entry['final_date'],
+                       VALOR=entry['value'])
+            writer.writerow(row)
+
+    base_compact_configuration.closing_file_path = closing_file_path
+    compact = Compact(base_compact_configuration)
+
+    # when
+    try:
+        compact.compact()
+    except Exception as e:
+        assert e is None, 'No exceptions should be thrown'
+
+    # then
+    opening_action = db_session.query(FileParsing)\
+        .filter_by(file_type=OPENING)\
+        .one_or_none()
+    assert opening_action is not None, 'Opening action not saved on database'
+    assert opening_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert opening_action.file_path == input_files['opening']['path'], \
+        'Wrong opening file path on database'
+    assert opening_action.status == OK, \
+        'Wrong status saved on database'
+
+    closing_action = db_session.query(FileParsing)\
+        .filter_by(file_type=CLOSING)\
+        .one_or_none()
+    assert closing_action is not None, 'Closing action not saved on database'
+    assert closing_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert closing_action.file_path == closing_file_path, \
+        'Wrong closing file path on database'
+    assert closing_action.status == BROKEN_FILE, \
+        'Wrong status saved on database'
+
+
+def test_compact_closing_invalid_final_date(tmp_path, sample_data_closing,
+                                            base_compact_configuration,
+                                            db_session, input_files):
+    # given
+    closing_file_path = tmp_path / 'no-id.csv'
+    with open(closing_file_path, 'w') as f:
+        fieldnames = sample_data_closing['fieldnames']
+        entries = sample_data_closing['entries']
+        entries[2]['final_date'] = ''
+        writer = csv.DictWriter(f,
+                                fieldnames=fieldnames,
+                                delimiter=';')
+
+        writer.writeheader()
+        for entry in entries:
+            row = dict(ID=entry['id'],
+                       DATA_FIM=entry['final_date'],
+                       VALOR=entry['value'])
+            writer.writerow(row)
+
+    base_compact_configuration.closing_file_path = closing_file_path
+    compact = Compact(base_compact_configuration)
+
+    # when
+    try:
+        compact.compact()
+    except Exception as e:
+        assert e is None, 'No exceptions should be thrown'
+
+    # then
+    opening_action = db_session.query(FileParsing)\
+        .filter_by(file_type=OPENING)\
+        .one_or_none()
+    assert opening_action is not None, 'Opening action not saved on database'
+    assert opening_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert opening_action.file_path == input_files['opening']['path'], \
+        'Wrong opening file path on database'
+    assert opening_action.status == OK, \
+        'Wrong status saved on database'
+
+    closing_action = db_session.query(FileParsing)\
+        .filter_by(file_type=CLOSING)\
+        .one_or_none()
+    assert closing_action is not None, 'Closing action not saved on database'
+    assert closing_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert closing_action.file_path == closing_file_path, \
+        'Wrong closing file path on database'
+    assert closing_action.status == BROKEN_FILE, \
+        'Wrong status saved on database'
+
+
+def test_compact_closing_invalid_value(tmp_path, sample_data_closing,
+                                       base_compact_configuration,
+                                       db_session, input_files):
+    # given
+    closing_file_path = tmp_path / 'no-id.csv'
+    with open(closing_file_path, 'w') as f:
+        fieldnames = sample_data_closing['fieldnames']
+        entries = sample_data_closing['entries']
+        entries[2]['value'] = ''
+        writer = csv.DictWriter(f,
+                                fieldnames=fieldnames,
+                                delimiter=';')
+
+        writer.writeheader()
+        for entry in entries:
+            row = dict(ID=entry['id'],
+                       DATA_FIM=entry['final_date'],
+                       VALOR=entry['value'])
+            writer.writerow(row)
+
+    base_compact_configuration.closing_file_path = closing_file_path
+    compact = Compact(base_compact_configuration)
+
+    # when
+    try:
+        compact.compact()
+    except Exception as e:
+        assert e is None, 'No exceptions should be thrown'
+
+    # then
+    opening_action = db_session.query(FileParsing)\
+        .filter_by(file_type=OPENING)\
+        .one_or_none()
+    assert opening_action is not None, 'Opening action not saved on database'
+    assert opening_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert opening_action.file_path == input_files['opening']['path'], \
+        'Wrong opening file path on database'
+    assert opening_action.status == OK, \
+        'Wrong status saved on database'
+
+    closing_action = db_session.query(FileParsing)\
+        .filter_by(file_type=CLOSING)\
+        .one_or_none()
+    assert closing_action is not None, 'Closing action not saved on database'
+    assert closing_action.creation_date is not None, \
+        'Creation date not saved on database'
+    assert closing_action.file_path == closing_file_path, \
+        'Wrong closing file path on database'
+    assert closing_action.status == BROKEN_FILE, \
+        'Wrong status saved on database'

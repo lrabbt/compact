@@ -40,20 +40,22 @@ class Compact:
                     opening_reader = csv.DictReader(opening_file,
                                                     delimiter=';')
                     for row in opening_reader:
+                        id = int(row['ID'])
                         day, month, year = map(
                             int, row['DATA_INICIO'].strip().split('/'))
                         initial_date = datetime.datetime(year, month, day)
-                        opening = Opening(id=row['ID'],
+                        unit = int(row['UNIDADE'])
+                        opening = Opening(id=id,
                                           initial_date=initial_date,
                                           name=row['NOME'],
                                           note=row['NOTA'],
-                                          unit=row['UNIDADE'])
+                                          unit=unit)
 
                         opening_entries.append(row)
                         session.add(opening)
             except FileNotFoundError:
                 opening_action.status = FILE_NOT_FOUND
-            except KeyError:
+            except (KeyError, ValueError):
                 opening_action.status = BROKEN_FILE
 
             session.add(opening_action)
@@ -68,13 +70,14 @@ class Compact:
                     closing_reader = csv.DictReader(closing_file,
                                                     delimiter=';')
                     for row in closing_reader:
+                        id = int(row['ID'])
                         date, time = row['DATA_FIM'].strip().split()
                         day, month, year = map(int, date.split('/'))
                         hour, minute = map(int, time.split(':'))
                         final_date = datetime.datetime(
                             year, month, day, hour, minute)
                         value = float(row['VALOR'].replace(',', '.'))
-                        closing = Closing(id=row['ID'],
+                        closing = Closing(id=id,
                                           final_date=final_date,
                                           value=value)
 
@@ -82,7 +85,7 @@ class Compact:
                         session.add(closing)
             except FileNotFoundError:
                 closing_action.status = FILE_NOT_FOUND
-            except KeyError:
+            except (KeyError, ValueError):
                 closing_action.status = BROKEN_FILE
 
             session.add(closing_action)
