@@ -5,8 +5,12 @@ import datetime
 import csv
 
 from .db import Opening, Closing, FileParsing
-from .db import OK, FILE_NOT_FOUND, BROKEN_FILE
+from .db import OK, FILE_NOT_FOUND, BROKEN_FILE, REPEATED_ID
 from .db import OPENING, CLOSING
+
+
+class NonUniqueIdError(Exception):
+    pass
 
 
 class CompactConfiguration:
@@ -43,6 +47,11 @@ class Compact:
                                                     delimiter=';')
                     for row in opening_reader:
                         id = int(row['ID'])
+                        old_opening = session.query(Opening)\
+                            .filter_by(id=id)\
+                            .one_or_none()
+                        if old_opening is not None:
+                            raise NonUniqueIdError
                         day, month, year = map(
                             int, row['DATA_INICIO'].strip().split('/'))
                         initial_date = datetime.datetime(year, month, day)
@@ -59,6 +68,8 @@ class Compact:
                 opening_action.status = FILE_NOT_FOUND
             except (KeyError, ValueError):
                 opening_action.status = BROKEN_FILE
+            except NonUniqueIdError:
+                opening_action.status = REPEATED_ID
 
             session.add(opening_action)
             with self.configuration.actions_file_path.open('a') as f:
@@ -78,6 +89,11 @@ class Compact:
                                                     delimiter=';')
                     for row in closing_reader:
                         id = int(row['ID'])
+                        old_closing = session.query(Closing)\
+                            .filter_by(id=id)\
+                            .one_or_none()
+                        if old_closing is not None:
+                            raise NonUniqueIdError
                         date, time = row['DATA_FIM'].strip().split()
                         day, month, year = map(int, date.split('/'))
                         hour, minute = map(int, time.split(':'))
@@ -94,6 +110,8 @@ class Compact:
                 closing_action.status = FILE_NOT_FOUND
             except (KeyError, ValueError):
                 closing_action.status = BROKEN_FILE
+            except NonUniqueIdError:
+                closing_action.status = REPEATED_ID
 
             session.add(closing_action)
             with self.configuration.actions_file_path.open('a') as f:
